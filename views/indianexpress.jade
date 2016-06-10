@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  .container
+  each index, val in result
+    .col-md-3
+      .panel
+        .panel-body
+          a(href= index.link)= index.text
