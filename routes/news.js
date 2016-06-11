@@ -23,6 +23,32 @@ router.get('/hindu', function(req, res, next){
   });
 });
 
+router.get('/archive', function(req, res, next){
+  var url = "http://archive.indianexpress.com/";
+  var links = [];
+  request(url, function(error, response, html){
+    if(error){
+      console.log(error);
+    }
+    else{
+      var $ = cheerio.load(html);
+      $('.archivetbl').children().children().children().each(function(i, element){
+        $(this).children().each(function(j, ele){
+          var _this = $(this).children().first().next();
+          if(_this.hasClass('show')){
+            _this.children().children().first().children().children().each(function(j, ele){
+              if(j >=1){
+                  var link = "http://archive.indianexpress.com" + $(this).children().attr('href');
+                  console.log(link);
+              }
+            });
+          }
+        })
+      });
+    }
+  });
+});
+
 router.get('/indianexpress', function(req, res, next){
   var url = "http://archive.indianexpress.com/archive/news/1/1/2014/";
   request(url, function(error, response, html){
@@ -91,15 +117,14 @@ function loadIndianExpress(news){
 function loadTimesofIndia(news){
   var i = 1;
   _(news).forEach(function(newsitem){
-    if(newsitem.link.startsWith("http://")){}
+    if(_.startsWith(newsitem.link, "http://")){}
     else{
       newsitem.link = "http://timesofindia.indiatimes.com" + newsitem.link;
     }
     var data={content:""};
-    console.log(newsitem.link);
     request(newsitem.link, function(error, response, html){
       if(error){
-        console.log('--------------------------------------- internal data error --------------------------------------------------');
+        console.log('------------------ internal data error ---------------------');
         console.log(newsitem.link);
         console.log(error);
       }
