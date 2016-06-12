@@ -132,6 +132,53 @@ router.get('/deccan', function(req, res, next){
   });
 });
 
+router.get('/hindustantimes', function(req, res, next){
+  var links = [];
+  var url = "http://www.hindustantimes.com/";
+  request(url, function(error, response, html){
+    if(error){
+      console.log(error);
+    }
+    else{
+      var $ = cheerio.load(html);
+      $('a').each(function(i, element){
+        var link = $(this).attr('href');
+        if(_.endsWith(link, 'html')){
+          links.push(link);
+        }
+      });
+      loadHindustanTimes(links);
+    }
+  });
+})
+
+function loadHindustanTimes(links){
+  var i=1;
+  _(links).forEach(function(link){
+    request(link, function(error, response, html){
+      if(error){
+        console.log(error);
+      }
+      else{
+        var $ = cheerio.load(html);
+        var someText = $('.sty_txt p').text();
+        someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
+        if(someText !== ""){
+          fs.appendFile('./hindustantimes.txt', someText + '\n', 'utf-8', function(err){
+            if(err){
+              console.log(err);
+            }
+          });
+        }
+        i++;
+        if(i >= links.length){
+          return;
+        }
+      }
+    })
+  });
+}
+
 function loadDeccan(links){
   var i=1;
   _(links).forEach(function(link){
