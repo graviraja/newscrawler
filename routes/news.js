@@ -133,6 +133,7 @@ router.get('/deccan', function(req, res, next){
 });
 
 function loadDeccan(links){
+  var i=1;
   _(links).forEach(function(link){
     request(link, function(error, response, html){
       if(error){
@@ -140,7 +141,19 @@ function loadDeccan(links){
       }
       else{
         var $ = cheerio.load(html);
-        
+        var someText = $('#storyBody p').text();
+        someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
+        if(someText !== ""){
+          fs.appendFile('./deccanchronicle.txt', someText + '\n', 'utf-8', function(err){
+            if(err){
+              console.log(err);
+            }
+          });
+        }
+        i++;
+        if(i >= links.length){
+          return;
+        }
       }
     });
   })
@@ -196,7 +209,7 @@ function loadIndianExpress(news){
         var $ = cheerio.load(html);
         var someText = $('.ie2013-contentstory p').text();
         someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
-        console.log(someText);
+        //console.log(someText);
         fs.appendFile('./indianexpress.txt', someText + '\n', 'utf-8', function(err){
           if(err){
             console.log(err);
