@@ -152,6 +152,20 @@ router.get('/hindustantimes', function(req, res, next){
   });
 })
 
+router.get('/tribune', function(req, res, next){
+  var url = "http://www.tribuneindia.com/";
+  request(url, function(error, response, html){
+    if(error){
+      console.log(error);
+    }
+    else{
+      console.log('entered');
+      var $ = cheerio.load(html);
+      console.log($('a'));
+    }
+  })
+});
+
 function loadHindustanTimes(links){
   var i=1;
   _(links).forEach(function(link){
