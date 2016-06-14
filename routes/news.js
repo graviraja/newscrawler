@@ -4,7 +4,6 @@ var request = require('request');
 var cheerio = require('cheerio');
 var _ = require('lodash');
 var fs = require('fs');
-/* GET users listing. */
 
 router.get('/allhindu', function(req, res, next){
   var url = "http://www.thehindu.com/";
@@ -54,6 +53,7 @@ router.get('/archive', function(req, res, next){
       console.log(error);
     }
     else{
+      console.log('entered main page')
       var $ = cheerio.load(html);
       $('.archivetbl').children().children().children().each(function(i, element){
         $(this).children().each(function(j, ele){
@@ -62,6 +62,7 @@ router.get('/archive', function(req, res, next){
             _this.children().children().first().children().children().each(function(j, ele){
               if(j >=1){
                   var link = "http://archive.indianexpress.com" + $(this).children().attr('href');
+                  console.log(link);
                   loadNews(link);
               }
             });
@@ -69,6 +70,27 @@ router.get('/archive', function(req, res, next){
         })
       });
     }
+  });
+});
+
+router.get('/archive/2014/jan', function(req, res, next){
+  var url = "http://archive.indianexpress.com/";
+  var links = [];
+  request(url, function(error, response, html){
+    if(error){
+      console.log(error);
+    }
+    else {
+      var $ = cheerio.load(html);
+      $('.archivetbl td .show .calender a').each(function(i, element){
+        var subl = $(this).attr('href');
+        if(_.startsWith(subl, '#') === false){
+          var link = "http://archive.indianexpress.com" + subl;
+          links.push(link);
+        }
+      });
+    }
+    loadFirstMonth(links);
   });
 });
 
@@ -152,19 +174,24 @@ router.get('/hindustantimes', function(req, res, next){
   });
 })
 
-router.get('/tribune', function(req, res, next){
-  var url = "http://www.tribuneindia.com/";
-  request(url, function(error, response, html){
-    if(error){
-      console.log(error);
-    }
-    else{
-      console.log('entered');
-      var $ = cheerio.load(html);
-      console.log($('a'));
-    }
-  })
-});
+function loadFirstMonth(links){
+  for(var i=0;i<5;i++){
+    var url = links[i];
+    request(url, function(error, response, html){
+      if(error){
+        console.log(error);
+      }
+      else{
+        var $ = cheerio.load(html);
+        var news = [];
+        $('.news_head li').each(function(i, element){
+          news.push($(this).children().first().attr('href'));
+        });
+        loadIndianExpress(news);
+      }
+    })
+  }
+}
 
 function loadHindustanTimes(links){
   var i=1;
@@ -242,24 +269,26 @@ function loadHinduCityData(cities){
 }
 
 function loadNews(url){
+  console.log('entered sublevel 1')
   request(url, function(error, response, html){
     if(error){
+      console.log(url);
       console.log(error);
     }
     else{
       var $ = cheerio.load(html);
       var news = [];
       $('.news_head li').each(function(i, element){
-        console.log(url , $(this).children().first().attr('href'));
         news.push($(this).children().first().attr('href'));
       });
-      //console.log(news);
-      //loadIndianExpress(news);
+      loadIndianExpress(news);
     }
   });
 }
 
 function loadIndianExpress(news){
+  console.log(news);
+  console.log('entered sublevel 2')
   var i=1;
   _(news).forEach(function(newsitem){
     request(newsitem, function(error, response, html){
@@ -267,15 +296,17 @@ function loadIndianExpress(news){
         console.log(error);
       }
       else {
+        console.log('entered inner most level');
         var $ = cheerio.load(html);
         var someText = $('.ie2013-contentstory p').text();
         someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
-        //console.log(someText);
-        fs.appendFile('./indianexpress.txt', someText + '\n', 'utf-8', function(err){
-          if(err){
-            console.log(err);
-          }
-        });
+        if(someText !== ""){
+          fs.appendFile('./indianexpress.txt', someText + '\n', 'utf-8', function(err){
+            if(err){
+              console.log(err);
+            }
+          });
+        }
         i++;
         if(i >= news.length){
           return;
