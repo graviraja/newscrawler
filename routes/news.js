@@ -46,6 +46,7 @@ router.get('/hindu', function(req, res, next){
 });
 
 router.get('/archive', function(req, res, next){
+  var interval;
   var url = "http://archive.indianexpress.com/";
   var links = [];
   request(url, function(error, response, html){
@@ -53,7 +54,6 @@ router.get('/archive', function(req, res, next){
       console.log(error);
     }
     else{
-      console.log('entered main page')
       var $ = cheerio.load(html);
       $('.archivetbl').children().children().children().each(function(i, element){
         $(this).children().each(function(j, ele){
@@ -62,13 +62,17 @@ router.get('/archive', function(req, res, next){
             _this.children().children().first().children().children().each(function(j, ele){
               if(j >=1){
                   var link = "http://archive.indianexpress.com" + $(this).children().attr('href');
-                  console.log(link);
-                  loadNews(link);
+                  links.push(link);
               }
             });
           }
         })
       });
+      var i=288;
+      interval = setInterval(function(){
+        console.log(i);
+        loadNews(links[i++], i);
+      }, 20000);
     }
   });
 });
@@ -174,6 +178,68 @@ router.get('/hindustantimes', function(req, res, next){
   });
 })
 
+function loadEachdate(url){
+  request(url, function(error, response, html){
+    if(error){
+      console.log(error);
+    }
+    else {
+      console.log('entered inner most level');
+      var $ = cheerio.load(html);
+      var someText = $('.ie2013-contentstory p').text();
+      someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
+      if(someText !== ""){
+        fs.appendFile('./indianexpress.txt', someText + '\n', 'utf-8', function(err){
+          if(err){
+            console.log(err);
+          }
+        });
+      }
+    }
+  });
+}
+
+function loadUrls(links){
+  _(links).forEach(function(link){
+    var urls = [];
+    request(link, function(error, response, html){
+      if(error){
+        console.log(error);
+      }else{
+        var $ = cheerio.load(html);
+        $('.news_head li').each(function(i, element){
+          urls.push($(this).children().first().attr('href'));
+        });
+      }
+      var i=1;
+      _(urls).forEach(function(newsitem){
+        request(newsitem, function(error, response, html){
+          if(error){
+            console.log(error);
+          }
+          else {
+            console.log('entered inner most level');
+            var $ = cheerio.load(html);
+            var someText = $('.ie2013-contentstory p').text();
+            someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
+            if(someText !== ""){
+              fs.appendFile('./indianexpress.txt', someText + '\n', 'utf-8', function(err){
+                if(err){
+                  console.log(err);
+                }
+              });
+            }
+            i++;
+            if(i >= urls.length){
+              return;
+            }
+          }
+        });
+      });
+    });
+  });
+}
+
 function loadFirstMonth(links){
   for(var i=0;i<5;i++){
     var url = links[i];
@@ -268,8 +334,7 @@ function loadHinduCityData(cities){
   });
 }
 
-function loadNews(url){
-  console.log('entered sublevel 1')
+function loadNews(url, name){
   request(url, function(error, response, html){
     if(error){
       console.log(url);
@@ -281,14 +346,13 @@ function loadNews(url){
       $('.news_head li').each(function(i, element){
         news.push($(this).children().first().attr('href'));
       });
-      loadIndianExpress(news);
+      loadIndianExpress(news, name);
+      return;
     }
   });
 }
 
-function loadIndianExpress(news){
-  console.log(news);
-  console.log('entered sublevel 2')
+function loadIndianExpress(news, name){
   var i=1;
   _(news).forEach(function(newsitem){
     request(newsitem, function(error, response, html){
@@ -296,15 +360,15 @@ function loadIndianExpress(news){
         console.log(error);
       }
       else {
-        console.log('entered inner most level');
         var $ = cheerio.load(html);
         var someText = $('.ie2013-contentstory p').text();
         someText = someText.replace(/(\r\n|\t|\r|\n|<br>)/gm,"");
         if(someText !== ""){
-          fs.appendFile('./indianexpress.txt', someText + '\n', 'utf-8', function(err){
+          fs.appendFile('./'+name+'.txt', someText + '\n', 'utf-8', function(err){
             if(err){
               console.log(err);
             }
+            console.log(name, 'created');
           });
         }
         i++;
