@@ -188,6 +188,85 @@ router.get('/andhra', function(req, res, next){
   })
 })
 
+router.get('/surya', function(req, res, next){
+    var links = [];
+    var url = "http://www.suryaa.com/archives/";
+    request(url, function(error, response, html){
+        if(error){
+            console.log(error);
+        }else{
+            var $ = cheerio.load(html);
+            $('.menu ul li a').each(function(i, element){
+                links.push($(this).attr('href'));
+            });
+            var l = links.splice(1735, 93);
+            var i = 0;
+            interval = setInterval(function(){
+                console.log(i);
+                if(i >= links.length){
+                    clearInterval(interval);
+                    res.send('done');
+                }
+                eachSuryaDay(links[i++]);
+            },20000);
+        }
+    })
+})
+
+function eachSuryaDay(date){
+    var links = [];
+    var b = date.split('=');
+    var day = b[1];
+    var c = day.split('/');
+    var filename = c[0]+'-'+c[1]+'-'+c[2]+'.txt';
+    request(date, function(error, response, html){
+            if(error){
+                console.log(error);
+            } else{
+                var $ = cheerio.load(html);
+                $('.list-5 li a').each(function(i, element){
+                    links.push($(this).attr('href'));
+                });
+                if(links.length != 0){
+                    _(links).forEach(function(link){
+                        request(link, function(err, res, ht){
+                            if(err){
+                                console.log(err)
+                            } else{
+                                var $ = cheerio.load(ht);
+                                var someText = $('.content').text();
+                                console.log(someText);
+                                if (someText !== "") {
+                                    fs.appendFile(filename, someText+'\n', 'utf-8', function(err) {
+                                        if (err) {
+                                            console.log(err);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+        });
+}
+
+function suryaEachDateLinks(dates){
+    var links = [];
+    _(dates).forEach(function(date){
+        request(date, function(error, response, html){
+            if(error){
+                console.log(error);
+            } else{
+                var $ = cheerio.load(html);
+                $('.list-5 li a').each(function(i, element){
+                    links.push($(this).attr('href'));
+                });
+            }
+        });
+    });
+}
+
 var all = [];
 
 function loadEachYear(url){
