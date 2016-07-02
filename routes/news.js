@@ -204,11 +204,11 @@ function loadEachYear(url){
       loadEachDateLinks(dates);
     }
     if(all.length == 2352){
-        var i = 226;
+        var i = 2005;
         interval = setInterval(function() {
             console.log(i);
             eachDay(all[i++]);
-        }, 20000);
+        }, 15000);
         //  eachDay(all[0]);
     }
   })
@@ -230,14 +230,19 @@ function eachDay(date){
       var $ = cheerio.load(html);
       $('.listitem a').each(function(i, element){
           request($(this).attr('href'), function(err, res, ht){
-            var $ = cheerio.load(ht);
-            var someText = $('.content p').text();
-            if (someText !== "") {
-                fs.appendFile(filename, someText+'\n', 'utf-8', function(err) {
-                    if (err) {
-                        console.log(err);
-                    }
-                });
+            if(err){
+                console.log(err);
+            }
+            else{
+                var $ = cheerio.load(ht);
+                var someText = $('.content p').text();
+                if (someText !== "") {
+                    fs.appendFile(filename, someText+'\n', 'utf-8', function(err) {
+                        if (err) {
+                            console.log(err);
+                        }
+                    });
+                }
             }
           });
       });
